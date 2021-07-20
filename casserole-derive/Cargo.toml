@@ -1,0 +1,23 @@
+[package]
+name = "casserole-derive"
+version = "0.1.0"
+edition = "2018"
+license = "MIT/Apache-2.0"
+description = "Break and serialize values into content-addressable storage"
+homepage = "https://github.com/da-x/casserole"
+repository = "https://github.com/da-x/casserole"
+keywords = ["serialization", "database"]
+categories = ["encoding"]
+readme = "crates-io.md"
+include = ["Cargo.toml", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
+autoexamples = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+lazy_static = "1"
+proc-macro-error = "1.*"
+proc-macro2 = { version = "1.0.12" }
+quote = "1.*"
+syn = { version = "1.0.*", features = ["extra-traits", "full"]  }
