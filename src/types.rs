@@ -3,3 +3,4 @@ mod basic;
 mod r#box;
 mod core;
 mod map;
+mod tuples;
