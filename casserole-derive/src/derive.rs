@@ -211,6 +211,8 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
 
     quote! {
         mod #dummy_mod {
+            use super::*;
+
             #bring_type
             use #krate::Casserole;
             use serde::{de::DeserializeOwned, Deserialize, Serialize};
