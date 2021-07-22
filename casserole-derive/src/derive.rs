@@ -11,6 +11,7 @@ enum Sep {
 
 #[derive(Default)]
 struct MainAttrs {
+    derives: Vec<proc_macro2::TokenStream>,
 }
 
 #[derive(Default)]
@@ -42,9 +43,13 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
         Span::call_site(),
     );
 
+    attrs.derives.push(quote!{Serialize});
+    attrs.derives.push(quote!{Deserialize});
+    let derives = &attrs.derives;
+
     folded_type.ident = folded_type_ident.clone();
     folded_type.attrs.clear();
-    folded_type.attrs.push(parse_quote!{#[derive(Serialize, Deserialize)]});
+    folded_type.attrs.push(parse_quote!{#[derive(#(#derives),*)]});
     folded_type.attrs.push(parse_quote!{#[allow(non_camel_case_types)]});
     folded_type.attrs.push(parse_quote!{#[serde(bound = "S::Key: DeserializeOwned")]});
     folded_type.vis = parse_quote!{pub};
@@ -231,18 +236,6 @@ fn get_attr_token_expr(ts: proc_macro2::TokenStream) -> (String, proc_macro2::to
             Some(TokenTree::Ident(term)) => {
                 break 'x term.to_string();
             }
-            Some(TokenTree::Literal(term)) => {
-                let s = term.to_string();
-                let p : proc_macro::TokenStream =
-                    std::str::FromStr::from_str(&format!("({})", &s[1..s.len()-1])).unwrap();
-                let t : TokenTree = syn::parse(p).unwrap();
-                let mut inner_ts = proc_macro2::TokenStream::from(t).into_iter();
-                if let Some(TokenTree::Group(group)) = inner_ts.next() {
-                    ts = group.stream().into_iter();
-                } else {
-                    panic!("expected attribute value x: {:?}", term)
-                }
-            }
             term => {
                 panic!("expected attribute value x: {:?}", term)
             }
@@ -284,8 +277,21 @@ fn get_main_attr_info(
             }
         };
 
-        let (term, _) = get_attr_token_expr(ts);
+        let (term, ts) = get_attr_token_expr(ts);
         match term.as_str() {
+            "derive" => {
+                for tree in ts {
+                    match tree {
+                        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+                            attrs.derives.push(group.stream())
+                        }
+                        _ => {
+                            panic!("extend () in `casserole` data type attribute `{:?}`", tree);
+                        }
+                    };
+                    break;
+                }
+            },
             _ => panic!(
                 "Invalid term {} in `{}`",
                 term.as_str(),
