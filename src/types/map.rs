@@ -2,7 +2,7 @@ use crate::{ser::Casserole, store::Store};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(
     bound = "S::Key: DeserializeOwned + Serialize, <K as Casserole<S>>::Target: DeserializeOwned \
              + Serialize"
