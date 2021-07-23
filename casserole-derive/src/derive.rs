@@ -239,7 +239,7 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
 
     let upper_name = name.to_string().to_uppercase();
     let dummy_mod = syn::Ident::new(
-        &format!("_IMPL_DIESEL_NEW_TYPE_FOR_{}", upper_name),
+        &format!("_IMPL_CASSEROLE_FOR_{}", upper_name),
         Span::call_site(),
     );
 
