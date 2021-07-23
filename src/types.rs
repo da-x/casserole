@@ -2,5 +2,6 @@
 mod basic;
 mod r#box;
 mod core;
+mod sync;
 mod map;
 mod tuples;
