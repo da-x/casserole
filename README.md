@@ -10,11 +10,20 @@
 [Docs link]: https://docs.rs/casserole
 
 The `casserole` crate provides a custom derive and a trait to perform
-break-down serialization and de-serialization of Rust types to into stores.
+break-down serialization and de-serialization of Rust types into stores.
 
-Most common use case is to break down large objects to be stored in
+The most common use case is to break down large objects to be stored in
 content-addressable storage, like in a Git database. Hence the name
 'CAS-ser-role'.
+
+The trait which Casserole auto-derives generates smaller types that contain
+references to keys instead of the original data. For example `HashMap<String,
+BigValue>` is replaced with `HashMap<String, S::Key>` where `S` is a type
+parameter to a user-provided storage engine. In addition, fields on which the
+`store` attribute is given e.g. `#[casserole(store)]`, are also replaced with
+`S::Key`.
+
+For example:
 
 ```rust
 /// Example Tree to be stored in the database
@@ -46,8 +55,8 @@ assert_eq!(restored_big_value, big_value);
 
 ## Bigger example
 
-See the output of the [example](example/main.rs), that demonstrates how a big map
-can be stored.
+See the output of the [example](example/main.rs), that demonstrates how a tree
+of maps can be stored and restored using Casserole.
 
 
 ```

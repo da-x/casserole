@@ -1,5 +1,18 @@
-The `casserole` crate provides a custom derive and a trait to perform break-down
-serialization and serialization of Rust types to into content-addressable storage.
+The `casserole` crate provides a custom derive and a trait to perform
+break-down serialization and de-serialization of Rust types into stores.
+
+The most common use case is to break down large objects to be stored in
+content-addressable storage, like in a Git database. Hence the name
+'CAS-ser-role'.
+
+The trait which Casserole auto-derives generates smaller types that contain
+references to keys instead of the original data. For example `HashMap<String,
+BigValue>` is replaced with `HashMap<String, S::Key>` where `S` is a type
+parameter to a user-provided storage engine. In addition, fields on which the
+`store` attribute is given e.g. `#[casserole(store)]`, are also replaced with
+`S::Key`.
+
+For example:
 
 ```rust
 /// Example Tree to be stored in the database
@@ -18,13 +31,8 @@ struct Node {
 Basic usage demonstration (given `big_value` as a large value to work with):
 
 ```rust
-// Obtain a reference to an example store (can be persistent or in-memory).
-// `JSONMemorySHA1` is like the Git database, but with base64 string as keys,
-// and serde-json output as values.
-let mut store = casserole::store::json::JSONMemorySHA1::new();
-
 // Create a our serde-ready type for the root. `stored_root` is our unique
-// representation for `big_value`, but it is very small, like a 'Git hash'.
+// representation for `big_value`, but it is very small, like a Git hash.
 let stored_root = big_value.casserole(&mut store).unwrap();
 
 // <...do other stuff...>
