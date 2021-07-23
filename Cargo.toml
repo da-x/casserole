@@ -16,7 +16,19 @@ resolver = "2"
 
 [features]
 default = []
+
+# Bundle a simple in-memory JSON store
 json-store = ["ascii85", "rust-crypto", "serde_json"]
+
+[dependencies]
+casserole-derive = { path = "casserole-derive", version = "0.1" }
+thiserror = "1"
+
+# Optional:
+ascii85 = { version = "0.2", optional = true }
+rust-crypto = { version = "0.2", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", optional = true }
 
 [[example]]
 name = "casserole-main"
@@ -27,14 +39,6 @@ required-features = ["json-store"]
 name = "casserole-test"
 path = "tests/main.rs"
 required-features = ["json-store"]
-
-[dependencies]
-ascii85 = { version = "0.2", optional = true }
-casserole-derive = { path = "casserole-derive", version = "0.1" }
-rust-crypto = { version = "0.2", optional = true }
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", optional = true }
-thiserror = "1"
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["rc"] }
