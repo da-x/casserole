@@ -12,6 +12,7 @@ enum Sep {
 #[derive(Default)]
 struct MainAttrs {
     derives: Vec<proc_macro2::TokenStream>,
+    bounds: Vec<proc_macro2::TokenStream>,
 }
 
 #[derive(Default)]
@@ -51,30 +52,58 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
     folded_type.attrs.clear();
     folded_type.attrs.push(parse_quote!{#[derive(#(#derives),*)]});
     folded_type.attrs.push(parse_quote!{#[allow(non_camel_case_types)]});
-    folded_type.attrs.push(parse_quote!{#[serde(bound = "S::Key: DeserializeOwned")]});
     folded_type.vis = parse_quote!{pub};
 
-    let s_where : WhereClause = parse_quote!{where #s: #krate::store::Store};
-    folded_type.generics.where_clause = Some({
-        let mut all_where = s_where.clone();
-        for param in &generics.params {
-            if let GenericParam::Type(ref type_param) = *param {
-                let ident = &type_param.ident;
-                all_where.predicates.push(parse_quote!{#ident: Casserole<#s>});
-                all_where.predicates.push(parse_quote!{<#ident as Casserole<#s>>::Target: DeserializeOwned});
+    let mut type_param_refs = 0;
+    match &mut folded_type.data {
+        Data::Struct(args) => {
+            type_param_refs += args.fields.len();
+        },
+        Data::Enum(args) => {
+            for variant in args.variants.iter() {
+                type_param_refs += variant.fields.len();
             }
-        }
-        all_where
-    });
+        },
+        Data::Union(_) => todo!(),
+    }
 
-    folded_type.generics.params.insert(0, s.clone());
-    let target_type_generics = folded_type.generics.params.clone();
+    let s_where : WhereClause = parse_quote!{where #s: #krate::store::Store};
+    if type_param_refs > 0 {
+        folded_type.generics.where_clause = Some({
+            let mut all_where = s_where.clone();
+            // all_where.predicates.push(parse_quote!{#s::Key: Ord});
+
+            for param in &generics.params {
+                if let GenericParam::Type(ref type_param) = *param {
+                    let ident = &type_param.ident;
+                    all_where.predicates.push(parse_quote!{#ident: Casserole<#s>});
+                    all_where.predicates.push(parse_quote!{<#ident as Casserole<#s>>::Target: DeserializeOwned});
+                }
+            }
+
+            for bound in &attrs.bounds {
+                all_where.predicates.push(parse_quote!{#s: #bound});
+            }
+
+            all_where
+        });
+    }
+
+    let (folded_type_ref, folded_type_construction_ref) = if type_param_refs > 0 {
+        folded_type.generics.params.insert(0, s.clone());
+        let target_type_generics = folded_type.generics.params.clone();
+        (quote! { #folded_type_ident<#target_type_generics> },
+         quote! { #folded_type_ident::<#target_type_generics> })
+    } else {
+        (quote! { #folded_type_ident }, quote! { #folded_type_ident })
+    };
 
     if let Some(where_clause) = &mut generics.where_clause {
         where_clause.predicates.extend(s_where.predicates.into_iter().collect::<Vec<_>>());
     } else {
         generics.where_clause = Some(s_where.clone());
     }
+
     if let Some(where_clause) = &mut generics.where_clause {
         for param in &generics.params {
             if let GenericParam::Type(ref type_param) = *param {
@@ -82,6 +111,9 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
                 where_clause.predicates.push(parse_quote!{#ident: Casserole<#s>});
                 where_clause.predicates.push(parse_quote!{<#ident as Casserole<#s>>::Target: DeserializeOwned});
             }
+        }
+        for bound in attrs.bounds {
+            where_clause.predicates.push(parse_quote!{#s: #bound});
         }
     }
 
@@ -120,6 +152,9 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
         },
         Data::Union(_) => todo!(),
     }
+    if type_param_refs > 0 {
+        folded_type.attrs.push(parse_quote!{#[serde(bound = "S::Key: DeserializeOwned")]});
+    }
 
     let mut modified_generics = generics.clone();
     modified_generics.params.insert(0, s.clone());
@@ -148,7 +183,7 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
             }
         },
         |expr| quote! { Ok(#expr) },
-        |expr, variant, field_kind| variant_reconstruction(quote!{Self::Target}, field_kind, variant, expr)
+        |expr, variant, field_kind| variant_reconstruction(&folded_type_construction_ref, field_kind, variant, expr)
     );
 
     let input_decasserole = {
@@ -179,14 +214,14 @@ pub(crate) fn derive_object_casserole(krate: &'static str, input: &DeriveInput) 
             }
         },
         |expr| quote! { Ok(#expr) },
-        |expr, variant, field_kind| variant_reconstruction(quote!{Self}, field_kind, variant, expr)
+        |expr, variant, field_kind| variant_reconstruction(&quote!{Self}, field_kind, variant, expr)
     );
 
     let result = quote! {
         #folded_type
 
         impl #modified_impl_generics Casserole<#s> for #name #ty_generics #where_clause {
-            type Target = #folded_type_ident<#target_type_generics>;
+            type Target = #folded_type_ref;
 
             fn casserole(&self, store: &mut S)
                 -> Result<Self::Target, S::Error>
@@ -292,6 +327,19 @@ fn get_main_attr_info(
                     break;
                 }
             },
+            "bounds" => {
+                for tree in ts {
+                    match tree {
+                        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+                            attrs.bounds.push(group.stream())
+                        }
+                        _ => {
+                            panic!("extend () in `casserole` data type attribute `{:?}`", tree);
+                        }
+                    };
+                    break;
+                }
+            },
             _ => panic!(
                 "Invalid term {} in `{}`",
                 term.as_str(),
@@ -367,7 +415,7 @@ where
     }
 }
 
-fn variant_reconstruction(typeref: Tokens, field_kind: FieldsKind, variant: Option<&Variant>, expr: Tokens) -> Tokens {
+fn variant_reconstruction(typeref: &Tokens, field_kind: FieldsKind, variant: Option<&Variant>, expr: Tokens) -> Tokens {
     match field_kind {
         FieldsKind::Named => {
             match variant {
