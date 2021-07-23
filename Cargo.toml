@@ -41,7 +41,7 @@ required-features = ["json-store"]
 [[test]]
 name = "casserole-test"
 path = "tests/main.rs"
-required-features = ["json-store"]
+required-features = ["json-store", "rc"]
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["rc"] }
