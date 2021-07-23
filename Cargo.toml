@@ -11,14 +11,16 @@ categories = ["encoding"]
 readme = "crates-io.md"
 include = ["Cargo.toml", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 autoexamples = false
+resolver = "2"
 
 [features]
 default = []
-example-store = ["ascii85", "rust-crypto"]
+json-store = ["ascii85", "rust-crypto", "serde_json"]
 
 [[example]]
 name = "casserole-main"
 path = "example/main.rs"
+required-features = ["json-store"]
 
 [dependencies]
 ascii85 = { version = "0.2", optional = true }
@@ -29,5 +31,5 @@ serde_json = { version = "1", optional = true }
 thiserror = "1"
 
 [dev-dependencies]
+serde = { version = "1.0", features = ["rc"] }
 maplit = "1"
-

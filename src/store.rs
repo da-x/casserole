@@ -20,5 +20,5 @@ pub trait Store {
         T: DeserializeOwned;
 }
 
-#[cfg(feature = "example-store")]
+#[cfg(feature = "json-store")]
 pub mod json;

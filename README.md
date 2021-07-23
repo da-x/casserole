@@ -51,7 +51,7 @@ can be stored.
 
 
 ```
-cargo run --example casserole-main
+cargo run --example casserole-main --features="json-store"
 ```
 
 ```
