@@ -17,6 +17,9 @@ resolver = "2"
 [features]
 default = []
 
+# Support Arc (and Rc in the future)
+rc = ["serde/rc"]
+
 # Bundle a simple in-memory JSON store
 json-store = ["ascii85", "rust-crypto", "serde_json"]
 
