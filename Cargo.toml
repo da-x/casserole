@@ -12,17 +12,22 @@ readme = "crates-io.md"
 include = ["Cargo.toml", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 autoexamples = false
 
+[features]
+default = []
+example-store = ["ascii85", "rust-crypto"]
+
 [[example]]
 name = "casserole-main"
 path = "example/main.rs"
 
 [dependencies]
-ascii85 = "0.2"
+ascii85 = { version = "0.2", optional = true }
 casserole-derive = { path = "casserole-derive", version = "0.1" }
-rust-crypto = "0.2"
+rust-crypto = { version = "0.2", optional = true }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", optional = true }
 thiserror = "1"
 
 [dev-dependencies]
 maplit = "1"
+
