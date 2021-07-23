@@ -11,6 +11,7 @@ categories = ["encoding"]
 readme = "crates-io.md"
 include = ["Cargo.toml", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 autoexamples = false
+autotests = false
 resolver = "2"
 
 [features]
@@ -20,6 +21,11 @@ json-store = ["ascii85", "rust-crypto", "serde_json"]
 [[example]]
 name = "casserole-main"
 path = "example/main.rs"
+required-features = ["json-store"]
+
+[[test]]
+name = "casserole-test"
+path = "tests/main.rs"
 required-features = ["json-store"]
 
 [dependencies]
