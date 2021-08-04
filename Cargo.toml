@@ -1,6 +1,6 @@
 [package]
 name = "casserole"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 license = "MIT/Apache-2.0"
 description = "Break and serialize values into content-addressable storage"
@@ -24,7 +24,7 @@ rc = ["serde/rc"]
 json-store = ["ascii85", "rust-crypto", "serde_json"]
 
 [dependencies]
-casserole-derive = { path = "casserole-derive", version = "0.1" }
+casserole-derive = { path = "casserole-derive", version = "0.2" }
 thiserror = "1"
 
 # Optional:
